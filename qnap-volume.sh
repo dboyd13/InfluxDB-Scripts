@@ -14,6 +14,11 @@
 #
 #########################################################################
 
+if [[ $# -ne 2  ]]; then
+  echo "Usage: qnap-volume.sh <hostname> <snmp_community>"
+  exit 1
+fi
+
 #Set your InfluxDB parameters
 influxhost="localhost:8086"
 influxdb="telegraf"
@@ -21,6 +26,7 @@ qnaphostname="zoidberg"
 
 hdtotalsize=`snmpget -v1 -t 5  -c $2 $1 .1.3.6.1.4.1.24681.1.2.17.1.4.1 |cut -d\" -f2 | cut -d' ' -f1 |awk '{ printf($1) }'`
 hdfreesize_snmp=`snmpget -v1 -t 5 -c $2 $1 .1.3.6.1.4.1.24681.1.2.17.1.5.1`
+hdtempcelsius=`snmpget -v1 -Oqv -t 5 -c $2 $1 1.3.6.1.4.1.24681.1.2.11.1.3.1 | cut -d" " -f1 | cut -d"\"" -f2`
 
 # First assign free size based on the assumption TB
 hdfreesize=`echo $hdfreesize_snmp |cut -d\" -f2 | cut -d' ' -f1 |awk '{ printf($1) }'`
@@ -42,12 +48,13 @@ hdusedpercent=`echo "scale=2; $hdfreesize/$hdtotalsize*100" | bc`
 #printf ' hdfreesize:'$hdfreesize
 #printf ' hdusedsize:'$hdusedsize
 #printf ' hdusedpercent: '$hdusedpercent
-
+#printf ' hdtempcelsius: '$hdtempcelsius
 
 #Post values of disk total, used and free to InfluxDB
 curl -i -XPOST "http://$influxhost/write?db=$influxdb" --data-binary "qnap-disk,host=$qnaphostname,metric=hdtotal value=$hdtotalsize `date +%s`000000000" >/dev/null 2>&1
 curl -i -XPOST "http://$influxhost/write?db=$influxdb" --data-binary "qnap-disk,host=$qnaphostname,metric=hdfree value=$hdfreesize `date +%s`000000000"  >/dev/null 2>&1
 curl -i -XPOST "http://$influxhost/write?db=$influxdb" --data-binary "qnap-disk,host=$qnaphostname,metric=hdused value=$hdusedsize `date +%s`000000000" >/dev/null 2>&1
 curl -i -XPOST "http://$influxhost/write?db=$influxdb" --data-binary "qnap-disk,host=$qnaphostname,metric=hdusedpercent value=$hdusedpercent `date +%s`000000000" >/dev/null 2>&1
+curl -i -XPOST "http://$influxhost/write?db=$influxdb" --data-binary "qnap-disk,host=$qnaphostname,metric=hdtempcelsius value=$hdtempcelsius `date +%s`000000000" >/dev/null 2>&1
 
 exit 0
