@@ -42,7 +42,7 @@ if [[ "$hdfreesize_snmp" == *" MB"* ]]; then
 fi
 
 hdusedsize=`echo "scale=2; $hdtotalsize - $hdfreesize" | bc |awk '{ printf($1) }'`
-hdusedpercent=`echo "scale=2; $hdfreesize/$hdtotalsize*100" | bc`
+hdusedpercent=`echo "scale=2; $hdusedsize/$hdtotalsize*100" | bc`
 
 #printf ' hdtotalsize:'$hdtotalsize
 #printf ' hdfreesize:'$hdfreesize
